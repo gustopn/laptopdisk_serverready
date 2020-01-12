@@ -3,6 +3,7 @@ scriptdir="`dirname $0`"
 scriptdir="`realpath "$scriptdir"`"
 smartctlbin="/usr/sbin/smartctl"
 alldisks_list="`"$scriptdir/list_alldisks.sh"`"
+currentuserid=`id -u`
 
 if [ ! -x "$smartctlbin" ]
 then \
@@ -12,7 +13,13 @@ fi
 
 for disk_instance in $alldisks_list
 do \
-  instance_allinfo="`sudo "$smartctlbin" -iA "$disk_instance"`"
+  instance_allinfo=""
+  if [ "$currentuserid" -eq 0 ]
+  then \
+    instance_allinfo="`"$smartctlbin" -iA "$disk_instance"`"
+  else \
+    instance_allinfo="`sudo "$smartctlbin" -iA "$disk_instance"`"
+  fi
   instance_desc="`echo "$instance_allinfo" | grep -e "Device Model:" -e "Serial Number:"`"
   instance_model="`echo "$instance_desc" | grep "Device Model:" | awk -F":" '{ print $2 }' | awk '{ sub(/^[ \t\r\n]+/, "", $0); sub(/[ \t\r\n]+$/, "", $0); print $0 }'`"
   instance_serial="`echo "$instance_desc" | grep "Serial Number:" | awk -F":" '{ print $2 }' | awk '{ sub(/^[ \t\r\n]+/, "", $0); sub(/[ \t\r\n]+$/, "", $0); print $0 }'`"
